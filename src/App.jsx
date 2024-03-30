@@ -1,33 +1,62 @@
-import { useState } from 'preact/hooks'
-import preactLogo from './assets/preact.svg'
-import viteLogo from '/vite.svg'
-import './app.css'
+import { useEffect, useState } from "react";
+import "./App.css";
+import ContactList from "./components/ContactList/ContactList";
+import userData from "./users.json";
+import SearchBox from "./components/SearchBox/SearchBox";
+import ContactForm from "./components/ContactForm/ContactForm";
+import { nanoid } from "nanoid";
 
-export function App() {
-  const [count, setCount] = useState(0)
+function App() {
+  const [users, setUsers] = useState(() => {
+    const stringifiedUsers = localStorage.getItem("users");
+    if (!stringifiedUsers) return userData;
+
+    const parsedUsers = JSON.parse(stringifiedUsers);
+    return parsedUsers;
+  });
+
+  const [filter, setFilter] = useState("");
+
+  const onChangeFilter = (event) => {
+    setFilter(event.target.value);
+  };
+
+  useEffect(() => {
+    localStorage.setItem("users", JSON.stringify(users));
+  }, [users]);
+
+  const onAddUser = (formData) => {
+    const finalUser = {
+      ...formData,
+      id: nanoid(),
+    };
+    setUsers((prevUsers) => [...prevUsers, finalUser]);
+  };
+
+  // User deleting functionality
+
+  const onUserDelete = (userId) => {
+    setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const nameIncludesFilter =
+      user.name && user.name.toLowerCase().includes(filter.toLowerCase());
+    const numberIncludesFilter =
+      typeof user.number === "string" &&
+      user.number.toLowerCase().includes(filter.toLowerCase());
+    return nameIncludesFilter || numberIncludesFilter;
+  });
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} class="logo" alt="Vite logo" />
-        </a>
-        <a href="https://preactjs.com" target="_blank">
-          <img src={preactLogo} class="logo preact" alt="Preact logo" />
-        </a>
-      </div>
-      <h1>Vite + Preact</h1>
-      <div class="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/app.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p class="read-the-docs">
-        Click on the Vite and Preact logos to learn more
-      </p>
+      <h1>Phonebook</h1>
+      <br />
+      <ContactForm onAddUser={onAddUser} />
+      <SearchBox onChangeFilter={onChangeFilter} value={filter} />
+      <ContactList users={filteredUsers} onUserDelete={onUserDelete} />
     </>
-  )
+  );
 }
+
+export default App;
